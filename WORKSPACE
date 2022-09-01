@@ -46,3 +46,19 @@ git_repository(
     patch_args = ["-p1"],
     patches = ["//:revert.patch"]
 )
+
+http_archive(
+    name = "rules_pkg_0_7_0_patched",
+    urls = [
+        "https://github.com/bazelbuild/rules_pkg/releases/download/0.7.0/rules_pkg-0.7.0.tar.gz",
+    ],
+    sha256 = "8a298e832762eda1830597d64fe7db58178aa84cd5926d76d5b744d6558941c2",
+    repo_mapping = {
+        "@rules_pkg": "@rules_pkg_0_7_0_patched"
+    },
+    patch_args = ["-p1"],
+    patch_tool = "patch",
+    patches = [
+        "//:pkg_tar_dir.patch",
+    ],
+)

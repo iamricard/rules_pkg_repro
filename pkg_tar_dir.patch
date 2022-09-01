@@ -1,0 +1,12 @@
+index ca4e566..2eac55c 100644
+--- a/pkg/private/tar/build_tar.py
++++ b/pkg/private/tar/build_tar.py
+@@ -301,7 +301,7 @@ class TarFile(object):
+       self.add_link(entry.dest, entry.src, **attrs)
+     elif entry.entry_type == manifest.ENTRY_IS_DIR:
+       self.add_empty_dir(entry.dest, **attrs)
+-    elif entry.entry_type == manifest.ENTRY_IS_TREE:
++    elif entry.entry_type == manifest.ENTRY_IS_TREE or os.path.isdir(entry.src):
+       self.add_tree(entry.src, entry.dest, **attrs)
+     elif entry.entry_type == manifest.ENTRY_IS_EMPTY_FILE:
+       self.add_empty_file(entry.dest, **attrs)
