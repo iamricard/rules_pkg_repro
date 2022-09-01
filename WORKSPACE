@@ -34,3 +34,15 @@ git_repository(
         "@rules_pkg": "@rules_pkg_git"
     }
 )
+
+git_repository(
+    name = "rules_pkg_git_patched",
+    remote = "https://github.com/bazelbuild/rules_pkg.git",
+    commit = "d915e26874383c36f83cd5795b2ac6f2a19d543f",
+    repo_mapping = {
+        "@rules_pkg": "@rules_pkg_git_patched"
+    },
+    patch_tool = "patch",
+    patch_args = ["-p1"],
+    patches = ["//:revert.patch"]
+)

@@ -1,0 +1,91 @@
+index 007cdb1..da6e7a1 100644
+--- a/pkg/private/archive.py
++++ b/pkg/private/archive.py
+@@ -220,6 +220,76 @@ class TarFileWriter(object):
+       print('Duplicate file in archive: %s, '
+             'picking first occurrence' % info.name)
+ 
++  def add_dir(self,
++              name,
++              path,
++              uid=0,
++              gid=0,
++              uname='',
++              gname='',
++              mtime=None,
++              mode=None,
++              depth=100):
++    """Recursively add a directory.
++
++    Args:
++      name: the ('/' delimited) path of the directory to add.
++      path: the (os.path.sep delimited) path of the directory to add.
++      uid: owner user identifier.
++      gid: owner group identifier.
++      uname: owner user names.
++      gname: owner group names.
++      mtime: modification time to put in the archive.
++      mode: unix permission mode of the file, default 0644 (0755).
++      depth: maximum depth to recurse in to avoid infinite loops
++             with cyclic mounts.
++    Raises:
++      TarFileWriter.Error: when the recursion depth has exceeded the
++                           `depth` argument.
++    """
++    if not (name == self.root_directory or name.startswith('/') or
++            name.startswith(self.root_directory + '/')):
++      name = self.root_directory + '/' + name
++    if mtime is None:
++      mtime = self.default_mtime
++    path = path.rstrip('/').rstrip('\\')
++    if os.path.isdir(path):
++      # Remove trailing '/' (index -1 => last character)
++      if name[-1] in ('/', '\\'):
++        name = name[:-1]
++      # Add the x bit to directories to prevent non-traversable directories.
++      # The x bit is set to 1 only if the read bit is also set.
++      dirmode = (mode | ((0o444 & mode) >> 2)) if mode else mode
++      self.add_file(name + '/',
++                    tarfile.DIRTYPE,
++                    uid=uid,
++                    gid=gid,
++                    uname=uname,
++                    gname=gname,
++                    mtime=mtime,
++                    mode=dirmode)
++      if depth <= 0:
++        raise self.Error('Recursion depth exceeded, probably in '
++                         'an infinite directory loop.')
++      # Iterate over the sorted list of file so we get a deterministic result.
++      filelist = os.listdir(path)
++      filelist.sort()
++      for f in filelist:
++        new_name = name + '/' + f
++        new_path = os.path.join(path, f)
++        self.add_dir(new_name, new_path, uid, gid, uname, gname, mtime, mode,
++                     depth - 1)
++    else:
++      self.add_file(name,
++                    tarfile.REGTYPE,
++                    file_content=path,
++                    uid=uid,
++                    gid=gid,
++                    uname=uname,
++                    gname=gname,
++                    mtime=mtime,
++                    mode=mode)
++
+   def add_file(self,
+                name,
+                kind=tarfile.REGTYPE,
+@@ -250,6 +320,10 @@ class TarFileWriter(object):
+     """
+     if not name:
+       return
++    if file_content and os.path.isdir(file_content):
++      # Recurse into directory
++      self.add_dir(name, file_content, uid, gid, uname, gname, mtime, mode)
++      return
+     if name == '.':
+       return
+     name = self.add_root(name)
